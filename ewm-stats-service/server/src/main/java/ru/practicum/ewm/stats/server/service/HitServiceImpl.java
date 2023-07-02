@@ -8,6 +8,7 @@ import ru.practicum.ewm.stats.server.mapper.HitMapper;
 import ru.practicum.ewm.stats.server.model.EndpointHit;
 import ru.practicum.ewm.stats.server.storage.HitStorage;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,10 +18,13 @@ import java.util.List;
 public class HitServiceImpl implements HitService {
     private final HitStorage hitStorage;
 
+    @Transactional
+    @Override
     public EndpointHit addHit(NewEndpointHit hit) {
         return hitStorage.save(HitMapper.toEndpointHit(hit));
     }
 
+    @Transactional
     @Override
     public List<ViewStats> getStats(String start, String end, String[] uris, boolean unique) {
         LocalDateTime startDate = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
