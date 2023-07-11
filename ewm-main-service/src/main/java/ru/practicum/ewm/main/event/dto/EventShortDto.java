@@ -10,24 +10,11 @@ import ru.practicum.ewm.main.user.dto.UserShortDto;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventShortDto {
-    @NonNull
     Long id;
-
-    @NonNull
     String annotation;
-
-    @NonNull
     CategoryDto category;
-
-    @NonNull
     String eventDate;
-
-    @NonNull
     UserShortDto initiator;
-
-    @NonNull
     Boolean paid;
-
-    @NonNull
     String title;
 }

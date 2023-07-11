@@ -10,51 +10,52 @@ import ru.practicum.ewm.main.user.dto.UserShortDto;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@RequiredArgsConstructor
 public class EventFullDto {
-    @NonNull
     Long id;
-
-    @NonNull
     String annotation;
-
-    @NonNull
     CategoryDto category;
-
     int confirmedRequests;
-
-    @NonNull
     String createdOn;
-
-    @NonNull
     String description;
-
-    @NonNull
     String eventDate;
-
-    @NonNull
     UserShortDto initiator;
-
-    @NonNull
     LocationDto location;
-
-    @NonNull
     Boolean paid;
-
-    @NonNull
     Integer participantLimit;
-
-    @NonNull
     String publishedOn;
-
-    @NonNull
     Boolean requestModeration;
-
-    @NonNull
     EventState state;
-
-    @NonNull
     String title;
-
     long views;
+
+    public EventFullDto(Long id,
+                        String annotation,
+                        CategoryDto category,
+                        String createdOn,
+                        String description,
+                        String eventDate,
+                        UserShortDto initiator,
+                        LocationDto location,
+                        Boolean paid,
+                        Integer participantLimit,
+                        String publishedOn,
+                        Boolean requestModeration,
+                        EventState state,
+                        String title
+    ) {
+        this.id = id;
+        this.annotation = annotation;
+        this.category = category;
+        this.createdOn = createdOn;
+        this.description = description;
+        this.eventDate = eventDate;
+        this.initiator = initiator;
+        this.location = location;
+        this.paid = paid;
+        this.participantLimit = participantLimit;
+        this.publishedOn = publishedOn;
+        this.requestModeration = requestModeration;
+        this.state = state;
+        this.title = title;
+    }
 }
