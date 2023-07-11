@@ -24,7 +24,7 @@
 
 	<modules>
 		<module>ewm-stats-service</module>
-		<module>ewm-main-serice</module>
+		<module>ewm-main-service</module>
 	</modules>
 
 	<build>
@@ -188,5 +188,4 @@
 			</build>
 		</profile>
 	</profiles>
-
 </project>
