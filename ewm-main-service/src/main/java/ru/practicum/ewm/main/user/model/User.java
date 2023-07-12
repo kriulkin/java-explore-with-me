@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.Hibernate;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.Objects;
 
 @Getter
@@ -12,7 +13,6 @@ import java.util.Objects;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "users")
@@ -20,10 +20,15 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    @NonNull
+    @NotNull
     String name;
-    @NonNull
+    @NotNull
     String email;
+
+    public User(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
 
     @Override
     public final boolean equals(Object o) {

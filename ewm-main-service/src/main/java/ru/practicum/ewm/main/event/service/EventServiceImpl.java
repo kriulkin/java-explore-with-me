@@ -57,7 +57,31 @@ public class EventServiceImpl implements EventService {
                 )
         );
 
-        updateEvent(updateEventAdminRequest, event);
+        if (updateEventAdminRequest.getEventDate() != null && !updateEventAdminRequest.getEventDate().isBlank()) {
+            LocalDateTime newEventDate = LocalDateTime.parse(updateEventAdminRequest.getEventDate(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            if (newEventDate.isBefore(LocalDateTime.now().minusHours(1))) {
+                throw new ArgumentValidationException("New event date in past");
+            }
+
+            event.setEventDate(newEventDate);
+        }
+
+        if (updateEventAdminRequest.getStateAction() == AdminStateAction.PUBLISH_EVENT
+                && event.getState() == EventState.PUBLISHED) {
+            throw new ModificationForbiddenException("Event already published");
+        }
+
+        if (updateEventAdminRequest.getStateAction() == AdminStateAction.PUBLISH_EVENT
+                && event.getState() == EventState.CANCELED) {
+            throw new ModificationForbiddenException("Event already canceled");
+        }
+
+        if (updateEventAdminRequest.getStateAction() == AdminStateAction.REJECT_EVENT
+                && event.getState() == EventState.PUBLISHED) {
+            throw new ModificationForbiddenException("Event already published");
+        }
 
         if (updateEventAdminRequest.getStateAction() != null) {
             if (updateEventAdminRequest.getStateAction() == AdminStateAction.PUBLISH_EVENT) {
@@ -67,6 +91,36 @@ public class EventServiceImpl implements EventService {
             }
         }
 
+        if (updateEventAdminRequest.getAnnotation() != null && !updateEventAdminRequest.getAnnotation().isBlank()) {
+            event.setAnnotation(updateEventAdminRequest.getAnnotation());
+        }
+
+        if (updateEventAdminRequest.getDescription() != null && !updateEventAdminRequest.getDescription().isBlank()) {
+            event.setDescription(updateEventAdminRequest.getDescription());
+        }
+
+        if (updateEventAdminRequest.getCategory() != null) {
+            event.setCategory(categoryStorage.findById(updateEventAdminRequest.getCategory()).orElseThrow(
+                            () -> new NoSuchEntityException("No such category")
+                    )
+            );
+        }
+
+        if (updateEventAdminRequest.getTitle() != null && !updateEventAdminRequest.getTitle().isBlank()) {
+            event.setTitle(updateEventAdminRequest.getTitle());
+        }
+
+        if (updateEventAdminRequest.getRequestModeration() != null) {
+            event.setRequestModeration(updateEventAdminRequest.getRequestModeration());
+        }
+
+        if (updateEventAdminRequest.getPaid() != null) {
+            event.setPaid(updateEventAdminRequest.getPaid());
+        }
+
+        if (updateEventAdminRequest.getParticipantLimit() != null) {
+            event.setParticipantLimit(updateEventAdminRequest.getParticipantLimit());
+        }
 
         return EventMapper.toEventFullDto(eventStorage.save(event));
     }
@@ -74,15 +128,10 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventFullDto> getEventsList(List<Long> users, List<String> states, List<Long> categories,
                                             String rangeStart, String rangeEnd, int from, int size) {
-        LocalDateTime startDate;
-        LocalDateTime endDate;
 
-        try {
-            startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        } catch (DateTimeParseException e) {
-            throw new ArgumentValidationException("The date field invalid");
-        }
+        Map<String, LocalDateTime> rangeMap = prepareDateFields(rangeStart, rangeEnd);
+        LocalDateTime startDate = rangeMap.get("startDate");
+        LocalDateTime endDate = rangeMap.get("endDate");
 
         Pageable page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.ASC, "id"));
 
@@ -129,7 +178,7 @@ public class EventServiceImpl implements EventService {
                 eventFullDtoList.get((int) eventId).setViews(stat.getHits());
             }
         }
-        return EventMapper.toListEventFullDto(events);
+        return List.copyOf(eventFullDtoMap.values());
     }
 
     @Override
@@ -137,6 +186,10 @@ public class EventServiceImpl implements EventService {
     public EventFullDto addEvent(long userId, NewEventDto newEventDto) {
         User user = userStorage.findById(userId).orElseThrow(() -> new NoSuchEntityException(
                 String.format("No such user with id = %d", userId)));
+
+        if (newEventDto.getEventDate().isBefore(LocalDateTime.now().minusHours(1))) {
+            throw new ArgumentValidationException("New event date in past");
+        }
 
         Category category = categoryStorage.findById(newEventDto.getCategory()).orElseThrow(
                 () -> new NoSuchEntityException(String.format("No such category with id = %s", newEventDto.getCategory()))
@@ -158,9 +211,9 @@ public class EventServiceImpl implements EventService {
         );
 
         EventFullDto eventFullDto = EventMapper.toEventFullDto(event);
-        eventFullDto.setConfirmedRequests(requestStorage.findByEventAndStatus(event, RequestStatus.CONFIRMED));
+        eventFullDto.setConfirmedRequests(requestStorage.countByEventAndStatus(event, RequestStatus.CONFIRMED));
         eventFullDto.setViews(statsClient.getStats(
-                event.getPublishedOn(),
+                event.getCreatedOn(),
                 event.getEventDate(),
                 new String[]{String.format("/events/%d", eventId)},
                 true
@@ -186,6 +239,15 @@ public class EventServiceImpl implements EventService {
     public EventFullDto updateUserEvent(long userId, long eventId, UpdateEventUserRequest updateEventUserRequest) {
         User user = userStorage.findById(userId).orElseThrow(() -> new NoSuchEntityException(
                 String.format("No such user with id = %d", userId)));
+
+        if (updateEventUserRequest.getEventDate() != null && !updateEventUserRequest.getEventDate().isBlank()) {
+            LocalDateTime newEventDate = LocalDateTime.parse(updateEventUserRequest.getEventDate(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            if (newEventDate.isBefore(LocalDateTime.now().minusHours(1))) {
+                throw new ArgumentValidationException("New event date in past");
+            }
+        }
 
         Event event = eventStorage.findByIdAndInitiator(eventId, user).orElseThrow(
                 () -> new NoSuchEntityException(String.format("No such event with id = %d", eventId))
@@ -279,16 +341,27 @@ public class EventServiceImpl implements EventService {
                 () -> new NoSuchEntityException(String.format("No such event with id = %d", eventId))
         );
 
-        saveStats(httpServletRequest);
-
         if (event.getState() != EventState.PUBLISHED) {
             throw new NoSuchEntityException(String.format("No such event with id = %d", eventId));
         }
 
-        return EventMapper.toEventFullDto(event);
+        saveStats(httpServletRequest);
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event);
+        List<ViewStats> stats = statsClient.getStats(event.getCreatedOn(),
+                LocalDateTime.now(),
+                new String[]{String.format("/events/%d", eventId)},
+                true
+        );
+
+        if (!stats.isEmpty()) {
+            eventFullDto.setViews(stats.get(0).getHits());
+        }
+        return eventFullDto;
     }
 
     @Override
+    @Transactional
     public List<EventFullDto> searchEvents(
             String text,
             Long[] categories,
@@ -301,15 +374,9 @@ public class EventServiceImpl implements EventService {
             boolean onlyAvailable,
             HttpServletRequest httpServletRequest) {
 
-        LocalDateTime startDate;
-        LocalDateTime endDate;
-
-        try {
-            startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        } catch (DateTimeParseException e) {
-            throw new ArgumentValidationException("The date field invalid");
-        }
+        Map<String, LocalDateTime> rangeMap = prepareDateFields(rangeStart, rangeEnd);
+        LocalDateTime startDate = rangeMap.get("startDate");
+        LocalDateTime endDate = rangeMap.get("endDate");
 
         Sort sortOrder = Sort.unsorted();
         if (sort != null) {
@@ -358,7 +425,7 @@ public class EventServiceImpl implements EventService {
         for (ViewStats stat : stats) {
             if (uris.containsKey(stat.getUri())) {
                 long eventId = uris.get(stat.getUri());
-                eventFullDtoList.get((int) eventId).setViews((stat.getHits()));
+                eventFullDtoMap.get(eventId).setViews((stat.getHits()));
             }
         }
 
@@ -396,19 +463,6 @@ public class EventServiceImpl implements EventService {
         if (start != null && end != null && start.isAfter(end)) {
             throw new ArgumentValidationException("Start date after end date");
         }
-    }
-
-    private void updateEvent(UpdateEventAdminRequest updateEventAdminRequest, Event event) {
-        updateEventCommon(event,
-                updateEventAdminRequest.getAnnotation(),
-                updateEventAdminRequest.getCategory(),
-                updateEventAdminRequest.getDescription(),
-                updateEventAdminRequest.getEventDate(),
-                updateEventAdminRequest.getLocation(),
-                updateEventAdminRequest.getPaid(),
-                updateEventAdminRequest.getParticipantLimit(),
-                updateEventAdminRequest.getRequestModeration(),
-                updateEventAdminRequest.getTitle());
     }
 
     private void updateEvent(UpdateEventUserRequest updateEventUserRequest, Event event) {
@@ -465,5 +519,39 @@ public class EventServiceImpl implements EventService {
         if (title != null && title.isBlank()) {
             event.setTitle(title);
         }
+    }
+
+    public Map<String, LocalDateTime> prepareDateFields(String rangeStart, String rangeEnd) {
+        LocalDateTime startDate;
+        LocalDateTime endDate;
+
+        if (rangeStart == null || rangeStart.isBlank()) {
+            startDate = LocalDateTime.now().minusYears(200L);
+        } else {
+            try {
+                startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (DateTimeParseException e) {
+                throw new ArgumentValidationException("The date field invalid");
+            }
+        }
+
+        if (rangeEnd == null || rangeEnd.isBlank()) {
+            endDate = LocalDateTime.now().plusYears(200L);
+        } else {
+            try {
+                endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (DateTimeParseException e) {
+                throw new ArgumentValidationException("The date field invalid");
+            }
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new ArgumentValidationException("Range start after Range end");
+        }
+
+        return Map.of(
+                "startDate", startDate,
+                "endDate", endDate
+        );
     }
 }

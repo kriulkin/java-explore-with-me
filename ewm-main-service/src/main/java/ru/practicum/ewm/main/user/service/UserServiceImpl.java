@@ -39,11 +39,11 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public List<UserDto> getUserList(List<Long> ids, int from, int size) {
-        if (!ids.isEmpty()) {
-            return UserMapper.toUserDtoList(userStorage.findAllById(ids));
-        } else {
+        if (ids == null || ids.isEmpty()) {
             Pageable page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.ASC, "id"));
             return UserMapper.toUserDtoList(userStorage.findAll(page).getContent());
+        } else {
+            return UserMapper.toUserDtoList(userStorage.findAllById(ids));
         }
     }
 }

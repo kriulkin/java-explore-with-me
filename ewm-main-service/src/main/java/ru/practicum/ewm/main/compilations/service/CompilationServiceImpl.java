@@ -18,7 +18,6 @@ import ru.practicum.ewm.main.exception.NoSuchEntityException;
 import javax.transaction.Transactional;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -60,18 +59,18 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public CompilationDto updateCompilation(long compId, UpdateCompilationRequest updateCompilationRequest) {
         Compilation compilation = compilationStorage.findById(compId).orElseThrow(
-                () -> new NoSuchEntityException(String.format("No such category with id = %s", compId)
+                () -> new NoSuchEntityException(String.format("No such compilation with id = %s", compId)
                 )
         );
 
         if (updateCompilationRequest.getPinned() != null) {
-            compilation.setPinned(compilation.getPinned());
+            compilation.setPinned(updateCompilationRequest.getPinned());
         }
         if (updateCompilationRequest.getTitle() != null && !compilation.getTitle().isBlank()) {
-            compilation.setTitle(compilation.getTitle());
+            compilation.setTitle(updateCompilationRequest.getTitle());
         }
         if (updateCompilationRequest.getEvents() != null) {
-            compilation.setEvents(Set.copyOf(eventStorage.findByIdIn(List.copyOf(updateCompilationRequest.getEvents()))));
+            compilation.setEvents(eventStorage.findByIdIn(updateCompilationRequest.getEvents()));
         }
         return CompilationMapper.toCompilationDto(compilationStorage.save(compilation));
     }
@@ -81,7 +80,7 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto getCompilcationById(long compId) {
         return CompilationMapper.toCompilationDto(
                 compilationStorage.findById(compId).orElseThrow(
-                        () -> new NoSuchEntityException(String.format("No such category with id = %s", compId)
+                        () -> new NoSuchEntityException(String.format("No such compilation with id = %s", compId)
                         )
                 )
         );

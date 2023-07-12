@@ -61,6 +61,10 @@ public class CategoryServiceImpl implements CategoryService {
                 () -> new NoSuchEntityException(String.format("No such category with id = %s", catId))
         );
 
+        if (category.equals(CategoryMapper.toCategory(categoryDto))) {
+            return CategoryMapper.toCategoryDto(category);
+        }
+
         return CategoryMapper.toCategoryDto(categoryStorage.save(new Category(catId, categoryDto.getName())));
     }
 }

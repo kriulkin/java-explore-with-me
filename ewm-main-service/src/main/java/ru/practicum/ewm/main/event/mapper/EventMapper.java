@@ -30,9 +30,9 @@ public class EventMapper {
                 newEventDto.getEventDate(),
                 initiator,
                 location,
-                newEventDto.getPaid() != null,
+                newEventDto.getPaid() == null ? false : newEventDto.getPaid(),
                 newEventDto.getParticipantLimit() == null ? 0 : newEventDto.getParticipantLimit(),
-                newEventDto.getRequestModeration(),
+                newEventDto.getRequestModeration() == null ? true : newEventDto.getRequestModeration(),
                 EventState.PENDING,
                 newEventDto.getTitle()
         );

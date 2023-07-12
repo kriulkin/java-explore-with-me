@@ -30,8 +30,17 @@ public class StatsClient {
                 .build();
     }
 
-    public ResponseEntity<ViewStats> addHit(NewEndpointHit body) {
-        return makeAndSendRequest(HttpMethod.POST, "/hit", null, body);
+    public void addHit(NewEndpointHit body) {
+        HttpEntity<NewEndpointHit> requestEntity = new HttpEntity<>(body, defaultHeaders());
+        ResponseEntity<ViewStats> statsServerResponse;
+
+        try {
+            statsServerResponse = rest.exchange("/hit", HttpMethod.POST, requestEntity, ViewStats.class);
+        } catch (HttpStatusCodeException e) {
+            throw new StatsClientRequestException(String.format("The request for statistic is failed due to %s", e.getMessage()));
+        }
+
+        prepareServerResponse(statsServerResponse);
     }
 
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, String[] uris, boolean unique) {
@@ -41,7 +50,7 @@ public class StatsClient {
         parameters.put("unique", unique);
 
         if (uris == null) {
-            return List.of(makeAndSendRequest(HttpMethod.POST,
+            return List.of(makeAndSendRequest(HttpMethod.GET,
                     "/stats?start={start}&end={end}&unique={unique}",
                     parameters,
                     null).getBody());
@@ -54,15 +63,15 @@ public class StatsClient {
                 null).getBody());
     }
 
-    private <T> ResponseEntity<ViewStats> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
+    private <T> ResponseEntity<ViewStats[]> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
         HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders());
 
-        ResponseEntity<ViewStats> statsServerResponse;
+        ResponseEntity<ViewStats[]> statsServerResponse;
         try {
             if (parameters != null) {
-                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats.class, parameters);
+                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats[].class, parameters);
             } else {
-                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats.class);
+                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats[].class);
             }
         } catch (HttpStatusCodeException e) {
             throw new StatsClientRequestException(String.format("The request for statistic is failed due to %s", e.getMessage()));
@@ -77,7 +86,7 @@ public class StatsClient {
         return headers;
     }
 
-    private static ResponseEntity<ViewStats> prepareServerResponse(ResponseEntity<ViewStats> response) {
+    private static <T> ResponseEntity<T> prepareServerResponse(ResponseEntity<T> response) {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response;
         }

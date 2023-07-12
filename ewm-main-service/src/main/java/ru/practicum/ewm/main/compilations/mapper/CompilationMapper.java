@@ -14,7 +14,7 @@ public class CompilationMapper {
         return new Compilation(
                 newCompilationDto.getTitle(),
                 events,
-                newCompilationDto.getPinned()
+                newCompilationDto.getPinned() != null && newCompilationDto.getPinned()
         );
     }
 

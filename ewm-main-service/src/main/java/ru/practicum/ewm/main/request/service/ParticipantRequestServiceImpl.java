@@ -41,7 +41,7 @@ public class ParticipantRequestServiceImpl implements ParticipantRequestService 
             throw new ModificationForbiddenException("User cannot create request for this event");
         }
 
-        if (!event.getState().equals(EventState.PUBLISHED)) {
+        if (event.getState() != (EventState.PUBLISHED)) {
             throw new ModificationForbiddenException("User cannot request participation in not published event");
         }
 
@@ -52,13 +52,13 @@ public class ParticipantRequestServiceImpl implements ParticipantRequestService 
         int confirmedRequests = requestStorage.countByEvent_IdAndStatus(event.getId(), RequestStatus.CONFIRMED);
 
         if (event.getParticipantLimit() != 0 && event.getParticipantLimit() <= confirmedRequests) {
-            throw new ModificationForbiddenException("User cannot take a participation due participation limit exceeded");
+            throw new ModificationForbiddenException("User cannot take a participation due to participation limit exceeded");
         }
 
         return ParticipationRequestMapper.toRequestDto(requestStorage.save(ParticipationRequestMapper.toRequest(
                 user,
                 event,
-                event.isRequestModeration() ? RequestStatus.PENDING : RequestStatus.CONFIRMED
+                !event.isRequestModeration() || event.getParticipantLimit() == 0 ? RequestStatus.CONFIRMED : RequestStatus.PENDING
         )));
     }
 
