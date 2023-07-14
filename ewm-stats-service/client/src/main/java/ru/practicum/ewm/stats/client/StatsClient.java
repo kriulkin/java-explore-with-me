@@ -10,8 +10,13 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.ewm.stats.dto.NewEndpointHit;
+import ru.practicum.ewm.stats.dto.ViewStats;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,45 +30,51 @@ public class StatsClient {
                 .build();
     }
 
-    public ResponseEntity<Object> addHit(@Nullable Map<String, Object> parameters, NewEndpointHit body) {
-        return makeAndSendRequest(HttpMethod.POST, "/hit", null, body);
-    }
+    public void addHit(NewEndpointHit body) {
+        HttpEntity<NewEndpointHit> requestEntity = new HttpEntity<>(body, defaultHeaders());
+        ResponseEntity<ViewStats> statsServerResponse;
 
-    public ResponseEntity<Object> getStats(LocalDateTime start, LocalDateTime end, String[] uris, boolean unique) {
-        if (uris == null) {
-            return makeAndSendRequest(HttpMethod.POST,
-                    "/stats?start={start}&end={end}&unique={unique}",
-                    Map.of(
-                            "start", start,
-                            "end", end,
-                            "unique", unique
-                    ),
-                    null);
+        try {
+            statsServerResponse = rest.exchange("/hit", HttpMethod.POST, requestEntity, ViewStats.class);
+        } catch (HttpStatusCodeException e) {
+            throw new StatsClientRequestException(String.format("The request for statistic is failed due to %s", e.getMessage()));
         }
 
-        return makeAndSendRequest(HttpMethod.GET,
-                "/stats?start={start}&end={end}&uris={uris}&unique={unique}",
-                Map.of(
-                        "start", start,
-                        "end", end,
-                        "uris", uris,
-                        "unique", unique
-                ),
-                null);
+        prepareServerResponse(statsServerResponse);
     }
 
-    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
+    public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, String[] uris, boolean unique) {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("start", URLEncoder.encode(start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), StandardCharsets.UTF_8));
+        parameters.put("end", URLEncoder.encode(end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), StandardCharsets.UTF_8));
+        parameters.put("unique", unique);
+
+        if (uris == null) {
+            return List.of(makeAndSendRequest(HttpMethod.GET,
+                    "/stats?start={start}&end={end}&unique={unique}",
+                    parameters,
+                    null).getBody());
+        }
+
+        parameters.put("uris", uris);
+        return List.of(makeAndSendRequest(HttpMethod.GET,
+                "/stats?start={start}&end={end}&uris={uris}&unique={unique}",
+                parameters,
+                null).getBody());
+    }
+
+    private <T> ResponseEntity<ViewStats[]> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
         HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders());
 
-        ResponseEntity<Object> statsServerResponse;
+        ResponseEntity<ViewStats[]> statsServerResponse;
         try {
             if (parameters != null) {
-                statsServerResponse = rest.exchange(path, method, requestEntity, Object.class, parameters);
+                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats[].class, parameters);
             } else {
-                statsServerResponse = rest.exchange(path, method, requestEntity, Object.class);
+                statsServerResponse = rest.exchange(path, method, requestEntity, ViewStats[].class);
             }
         } catch (HttpStatusCodeException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
+            throw new StatsClientRequestException(String.format("The request for statistic is failed due to %s", e.getMessage()));
         }
         return prepareServerResponse(statsServerResponse);
     }
@@ -75,7 +86,7 @@ public class StatsClient {
         return headers;
     }
 
-    private static ResponseEntity<Object> prepareServerResponse(ResponseEntity<Object> response) {
+    private static <T> ResponseEntity<T> prepareServerResponse(ResponseEntity<T> response) {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response;
         }
