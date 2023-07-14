@@ -745,7 +745,7 @@
 					"",
 					"    getComment() {",
 					"        return {",
-					"            text: pm.variables.replaceIn('{{$randomLoremParagraph}}'),",
+					"            text: pm.variables.replaceIn('{{$randomLoremParagraph}}').slice(0,255),",
 					"        }",
 					"    }",
 					"",
