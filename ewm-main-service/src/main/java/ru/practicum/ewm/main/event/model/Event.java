@@ -4,10 +4,13 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.Hibernate;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.comment.model.Comment;
 import ru.practicum.ewm.main.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -64,6 +67,10 @@ public class Event {
 
     String title;
 
+    @OneToMany()
+    @JoinTable(name = "comments",
+            inverseJoinColumns = @JoinColumn(name = "id"))
+    private List<Comment> comments = new ArrayList<>();
 
     public Event(String annotation, Category category, LocalDateTime createdOn, String description, LocalDateTime eventDate, User initiator, Location location, boolean paid, int participantLimit, boolean requestModeration, EventState state, String title) {
         this.annotation = annotation;
