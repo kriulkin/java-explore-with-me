@@ -62,7 +62,7 @@ public class Event {
     @Enumerated(EnumType.STRING)
     EventState state;
 
-    private String title;
+    String title;
 
 
     public Event(String annotation, Category category, LocalDateTime createdOn, String description, LocalDateTime eventDate, User initiator, Location location, boolean paid, int participantLimit, boolean requestModeration, EventState state, String title) {

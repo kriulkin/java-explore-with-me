@@ -17,5 +17,5 @@ public class CompilationDto {
     Long id;
     Boolean pinned;
     String title;
-    private List<EventShortDto> events;
+    List<EventShortDto> events;
 }

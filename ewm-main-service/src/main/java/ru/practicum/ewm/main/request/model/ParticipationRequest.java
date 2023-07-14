@@ -26,17 +26,17 @@ public class ParticipationRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @ToString.Exclude
-    private User requester;
+    User requester;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
     @ToString.Exclude
-    private Event event;
+    Event event;
 
-    private LocalDateTime created;
+    LocalDateTime created;
 
     @Enumerated(EnumType.STRING)
-    private RequestStatus status;
+    RequestStatus status;
 
     public ParticipationRequest(User requester, Event event, LocalDateTime created, RequestStatus status) {
         this.requester = requester;

@@ -12,9 +12,9 @@ import ru.practicum.ewm.main.event.service.RequestStatus;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ParticipationRequestDto {
-    private long id;
-    private String created;
-    private long event;
-    private long requester;
-    private RequestStatus status;
+    long id;
+    String created;
+    long event;
+    long requester;
+    RequestStatus status;
 }
