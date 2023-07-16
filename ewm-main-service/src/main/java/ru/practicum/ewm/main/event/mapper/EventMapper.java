@@ -2,6 +2,7 @@ package ru.practicum.ewm.main.event.mapper;
 
 import ru.practicum.ewm.main.category.mapper.CategoryMapper;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.comment.mapper.CommentMapper;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
@@ -53,7 +54,8 @@ public class EventMapper {
                 event.getPublishedOn() == null ? null : event.getPublishedOn().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                 event.isRequestModeration(),
                 event.getState(),
-                event.getTitle()
+                event.getTitle(),
+                CommentMapper.toCommentDtoList(event.getComments())
         );
     }
 
@@ -65,7 +67,8 @@ public class EventMapper {
                 event.getEventDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                 UserMapper.toUserShortDto(event.getInitiator()),
                 event.isPaid(),
-                event.getTitle()
+                event.getTitle(),
+                (long) event.getComments().size()
         );
     }
 

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.storage.CategoryStorage;
+import ru.practicum.ewm.main.comment.storage.CommentStorage;
 import ru.practicum.ewm.main.event.dto.*;
 import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.mapper.LocationMapper;
@@ -48,6 +49,7 @@ public class EventServiceImpl implements EventService {
     private final StatsClient statsClient;
     private final ParticipantRequestStorage requestStorage;
     private final LocationStorage locationStorage;
+    private final CommentStorage commentStorage;
 
     @Override
     @Transactional
@@ -175,9 +177,10 @@ public class EventServiceImpl implements EventService {
         for (ViewStats stat : stats) {
             if (uris.containsKey(stat.getUri())) {
                 long eventId = uris.get(stat.getUri());
-                eventFullDtoList.get((int) eventId).setViews(stat.getHits());
+                eventFullDtoMap.get(eventId).setViews(stat.getHits());
             }
         }
+
         return List.copyOf(eventFullDtoMap.values());
     }
 
@@ -219,6 +222,7 @@ public class EventServiceImpl implements EventService {
                 true
         ).size());
 
+        eventFullDto.setComments(commentStorage.findByEvent_Id(eventId));
         return eventFullDto;
     }
 

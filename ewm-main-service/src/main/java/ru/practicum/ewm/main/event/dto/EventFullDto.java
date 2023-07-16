@@ -6,8 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
+import ru.practicum.ewm.main.comment.dto.CommentDto;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.user.dto.UserShortDto;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -30,6 +33,7 @@ public class EventFullDto {
     EventState state;
     String title;
     long views;
+    List<CommentDto> comments;
 
     public EventFullDto(Long id,
                         String annotation,
@@ -44,7 +48,8 @@ public class EventFullDto {
                         String publishedOn,
                         Boolean requestModeration,
                         EventState state,
-                        String title
+                        String title,
+                        List<CommentDto> comments
     ) {
         this.id = id;
         this.annotation = annotation;
@@ -60,5 +65,6 @@ public class EventFullDto {
         this.requestModeration = requestModeration;
         this.state = state;
         this.title = title;
+        this.comments = comments;
     }
 }
